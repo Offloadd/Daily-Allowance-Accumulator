@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Income Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0e;
+    --surface: #1a1a18;
+    --surface2: #222220;
+    --border: #2e2e2b;
+    --accent: #c8a96e;
+    --accent2: #7eb89a;
+    --text: #e8e4dc;
+    --muted: #6b6860;
+    --danger: #c47a6e;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    background-image: 
+      radial-gradient(ellipse at 20% 0%, rgba(200,169,110,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(126,184,154,0.04) 0%, transparent 50%);
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 3rem;
+  }
+
+  .year-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  /* === INCOME LOG SECTION === */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+    gap: 1rem;
+  }
+
+  .section-header:hover { background: var(--surface2); }
+
+  .section-title-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .section-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .header-total {
+    font-size: 1.3rem;
+    font-family: 'Playfair Display', serif;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .toggle-icon {
+    font-size: 0.7rem;
+    color: var(--muted);
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+
+  .section.collapsed .toggle-icon { transform: rotate(-90deg); }
+
+  .section-body {
+    border-top: 1px solid var(--border);
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s;
+    max-height: 2000px;
+    opacity: 1;
+  }
+
+  .section.collapsed .section-body {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  /* === INPUT FORM === */
+  .add-form {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr auto auto;
+    gap: 0.75rem;
+    align-items: end;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+  label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input, select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.75rem;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  select option { background: var(--surface); }
+
+  .btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 3px;
+    color: #0f0f0e;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    padding: 0.6rem 1rem;
+    text-transform: uppercase;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+    align-self: end;
+  }
+
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+
+  .btn-ghost:hover { border-color: var(--danger); color: var(--danger); opacity: 1; }
+
+  /* === LOG TABLE === */
+  .log-area {
+    padding: 0;
+  }
+
+  .log-empty {
+    padding: 2.5rem 1.5rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  .log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  .log-table th {
+    font-size: 0.58rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+
+  .log-table td {
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid rgba(46,46,43,0.5);
+    vertical-align: middle;
+  }
+
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .td-amount { color: var(--accent2); font-weight: 500; }
+  .td-source { color: var(--text); }
+  .td-date { color: var(--muted); font-size: 0.78rem; }
+  .td-note { color: var(--muted); font-size: 0.78rem; font-style: italic; }
+
+  .row-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .log-table tr:hover .row-actions { opacity: 1; }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 2px;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+  }
+  .icon-btn.edit { color: var(--muted); }
+  .icon-btn.edit:hover { color: var(--accent); background: rgba(200,169,110,0.1); }
+  .icon-btn.del { color: var(--muted); }
+  .icon-btn.del:hover { color: var(--danger); background: rgba(196,122,110,0.1); }
+
+  /* === EDIT MODAL === */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(3px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 480px;
+    animation: modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.94) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-title {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-fields .field:last-of-type { grid-column: span 2; }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 0.6rem 1.2rem;
+    text-transform: uppercase;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+
+  /* === DAILY SECTION === */
+  .daily-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2rem 1.5rem;
+  }
+
+  .daily-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .daily-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.25rem;
+  }
+
+  .daily-card-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .daily-card-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: var(--accent2);
+    line-height: 1;
+  }
+
+  .daily-card-value.big {
+    font-size: 2.4rem;
+    color: var(--accent);
+  }
+
+  .daily-sub {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 0.35rem;
+  }
+
+  .progress-bar-wrap {
+    margin-top: 1.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.25rem;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+    min-width: 2px;
+  }
+
+  @media (max-width: 580px) {
+    .add-form {
+      grid-template-columns: 1fr 1fr;
+    }
+    .btn:not(.btn-ghost) {
+      grid-column: span 2;
+    }
+    h1 { font-size: 1.8rem; }
+    .header-total { font-size: 1rem; }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="year-label" id="yearLabel">2025 · Income Tracker</div>
+    <h1>Money<br>In</h1>
+  </header>
+
+  <!-- DAILY ALLOWANCE SECTION -->
+  <div class="daily-section">
+    <div class="section-label" style="margin-bottom:0.25rem">Daily Allowance</div>
+    <div style="font-size:0.8rem; color:var(--muted);">Total ÷ 365 days</div>
+
+    <div class="daily-grid">
+      <div class="daily-card">
+        <div class="daily-card-label">Daily</div>
+        <div class="daily-card-value big" id="dailyValue">$0.00</div>
+        <div class="daily-sub">per day</div>
+      </div>
+      <div class="daily-card">
+        <div class="daily-card-label">Weekly</div>
+        <div class="daily-card-value" id="weeklyValue">$0.00</div>
+        <div class="daily-sub">× 7 days</div>
+      </div>
+      <div class="daily-card">
+        <div class="daily-card-label">Monthly (avg)</div>
+        <div class="daily-card-value" id="monthlyValue">$0.00</div>
+        <div class="daily-sub">× 30.4 days</div>
+      </div>
+      <div class="daily-card">
+        <div class="daily-card-label">Total Income</div>
+        <div class="daily-card-value" id="totalValue">$0.00</div>
+        <div class="daily-sub" id="entryCount">0 entries</div>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-label">
+        <span>Year Progress</span>
+        <span id="yearProgress">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INCOME LOG SECTION -->
+  <div class="section" id="logSection" style="margin-top:1.5rem">
+    <div class="section-header" onclick="toggleSection('logSection')">
+      <div class="section-title-group">
+        <span class="section-label">Income Log</span>
+        <span class="header-total" id="headerTotal">$0.00</span>
+      </div>
+      <span class="toggle-icon">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="add-form">
+        <div class="field">
+          <label for="inputSource">Source</label>
+          <input type="text" id="inputSource" placeholder="e.g. Employer, Freelance…">
+        </div>
+        <div class="field">
+          <label for="inputAmount">Amount ($)</label>
+          <input type="number" id="inputAmount" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label for="inputDate">Date</label>
+          <input type="date" id="inputDate">
+        </div>
+        <div class="field">
+          <label for="inputNote">Note (optional)</label>
+          <input type="text" id="inputNote" placeholder="e.g. paycheck, bonus…">
+        </div>
+        <button class="btn" onclick="addEntry()">+ Add</button>
+      </div>
+
+      <div class="log-area">
+        <div class="log-empty" id="logEmpty">No entries yet. Add your first income above.</div>
+        <table class="log-table" id="logTable" style="display:none">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Source</th>
+              <th>Amount</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="editModal" onclick="closeModal(event)">
+    <div class="modal">
+      <div class="modal-title">Edit Entry</div>
+      <div class="modal-fields">
+        <div class="field">
+          <label for="editSource">Source</label>
+          <input type="text" id="editSource">
+        </div>
+        <div class="field">
+          <label for="editAmount">Amount ($)</label>
+          <input type="number" id="editAmount" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label for="editDate">Date</label>
+          <input type="date" id="editDate">
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <label for="editNote">Note (optional)</label>
+          <input type="text" id="editNote">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn" onclick="saveEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'income_tracker_entries';
+
+  let entries = [];
+
+  function loadEntries() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      entries = raw ? JSON.parse(raw) : [];
+    } catch(e) { entries = []; }
+  }
+
+  function saveEntries() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function fmt(n) {
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function totalIncome() {
+    return entries.reduce((s, e) => s + e.amount, 0);
+  }
+
+  function renderLog() {
+    const tbody = document.getElementById('logBody');
+    const empty = document.getElementById('logEmpty');
+    const table = document.getElementById('logTable');
+
+    if (entries.length === 0) {
+      empty.style.display = '';
+      table.style.display = 'none';
+      return;
+    }
+
+    empty.style.display = 'none';
+    table.style.display = '';
+
+    const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    tbody.innerHTML = sorted.map((e) => {
+      return `<tr class="fade-in">
+        <td class="td-date">${formatDate(e.date)}</td>
+        <td class="td-source">${esc(e.source)}</td>
+        <td class="td-amount">${fmt(e.amount)}</td>
+        <td class="td-note">${esc(e.note || '—')}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn edit" onclick="openEdit('${e.id}')" title="Edit">✎</button>
+            <button class="icon-btn del" onclick="deleteEntry('${e.id}')" title="Delete">✕</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    const [y, m, day] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[parseInt(m)-1]} ${parseInt(day)}, ${y}`;
+  }
+
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderStats() {
+    const total = totalIncome();
+    const daily = total / 365;
+    const weekly = daily * 7;
+    const monthly = daily * 30.4375;
+
+    document.getElementById('headerTotal').textContent = fmt(total);
+    document.getElementById('totalValue').textContent = fmt(total);
+    document.getElementById('dailyValue').textContent = fmt(daily);
+    document.getElementById('weeklyValue').textContent = fmt(weekly);
+    document.getElementById('monthlyValue').textContent = fmt(monthly);
+    document.getElementById('entryCount').textContent = `${entries.length} entr${entries.length===1?'y':'ies'}`;
+
+    // Year progress
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const end = new Date(now.getFullYear() + 1, 0, 1);
+    const pct = Math.round(((now - start) / (end - start)) * 100);
+    document.getElementById('yearProgress').textContent = pct + '%';
+    document.getElementById('progressFill').style.width = pct + '%';
+
+    // Year label
+    document.getElementById('yearLabel').textContent = now.getFullYear() + ' · Income Tracker';
+  }
+
+  function render() {
+    renderLog();
+    renderStats();
+  }
+
+  function addEntry() {
+    const source = document.getElementById('inputSource').value.trim();
+    const amount = parseFloat(document.getElementById('inputAmount').value);
+    const date = document.getElementById('inputDate').value;
+    const note = document.getElementById('inputNote').value.trim();
+
+    if (!source) { alert('Please enter a source.'); return; }
+    if (isNaN(amount) || amount <= 0) { alert('Please enter a valid amount.'); return; }
+    if (!date) { alert('Please select a date.'); return; }
+
+    entries.push({ id: Date.now().toString(), source, amount, date, note });
+    saveEntries();
+    render();
+
+    document.getElementById('inputSource').value = '';
+    document.getElementById('inputAmount').value = '';
+    document.getElementById('inputNote').value = '';
+    // keep date as-is for convenience
+  }
+
+  function deleteEntry(id) {
+    entries = entries.filter(e => e.id !== id);
+    saveEntries();
+    render();
+  }
+
+  let editingId = null;
+
+  function openEdit(id) {
+    const e = entries.find(x => x.id === id);
+    if (!e) return;
+    editingId = id;
+    document.getElementById('editSource').value = e.source;
+    document.getElementById('editAmount').value = e.amount;
+    document.getElementById('editDate').value = e.date;
+    document.getElementById('editNote').value = e.note || '';
+    document.getElementById('editModal').classList.add('open');
+    document.getElementById('editSource').focus();
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== document.getElementById('editModal')) return;
+    document.getElementById('editModal').classList.remove('open');
+    editingId = null;
+  }
+
+  function saveEdit() {
+    const source = document.getElementById('editSource').value.trim();
+    const amount = parseFloat(document.getElementById('editAmount').value);
+    const date = document.getElementById('editDate').value;
+    const note = document.getElementById('editNote').value.trim();
+
+    if (!source) { alert('Please enter a source.'); return; }
+    if (isNaN(amount) || amount <= 0) { alert('Please enter a valid amount.'); return; }
+    if (!date) { alert('Please select a date.'); return; }
+
+    const idx = entries.findIndex(x => x.id === editingId);
+    if (idx !== -1) {
+      entries[idx] = { ...entries[idx], source, amount, date, note };
+      saveEntries();
+      render();
+    }
+    document.getElementById('editModal').classList.remove('open');
+    editingId = null;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && document.getElementById('editModal').classList.contains('open')) saveEdit();
+  });
+
+  function toggleSection(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+  }
+
+  // Set today's date as default
+  document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
+
+  loadEntries();
+  render();
+</script>
+</body>
+</html>
